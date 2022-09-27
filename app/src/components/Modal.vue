@@ -10,8 +10,6 @@
         <header class="modal-header" id="modalTitle">
           <slot name="header">
             <h1>MODIFIER MA TO DO</h1>
-            <!-- {{ props.title }}
-            {{ props.description }} -->
           </slot>
           <button
             type="button"
@@ -40,8 +38,12 @@
                     v-model="todoDescription"
                   ></textarea>
 
-                  <button class="button-submit" type="submit">
-                    Enregistrer
+                  <button
+                    @click="todoUpdate()"
+                    class="button-submit"
+                    type="submit"
+                  >
+                    Modifier
                   </button>
                   <button @click="todoDelete()" class="button-delete">
                     Supprimer
@@ -67,7 +69,6 @@ import gql from "graphql-tag";
 const todoTitle = ref(props.title);
 const todoDescription = ref(props.description);
 const todoId = ref(props.id);
-console.log();
 
 const props = defineProps({
   id: String,
@@ -118,6 +119,30 @@ const { mutate: todoDelete, onDone } = useMutation(
 onDone(() => {
   onClose();
 });
+
+const { mutate: todoUpdate } = useMutation(
+  gql`
+    mutation todoUpdate($todoId: ID!, $title: String!, $description: String!) {
+      todoUpdate(
+        todoId: $todoId
+        input: { title: $title, description: $description }
+      ) {
+        todo {
+          id
+          title
+          description
+        }
+      }
+    }
+  `,
+  () => ({
+    variables: {
+      todoId: todoId.value,
+      title: todoTitle.value,
+      description: todoDescription.value,
+    },
+  })
+);
 </script>
 
 <style>

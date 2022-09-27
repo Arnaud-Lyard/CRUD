@@ -1,16 +1,16 @@
 <template>
   <div class="form">
-    <form @submit.prevent="handleSubmit">
+    <form @submit.prevent="todoCreate">
       <label for="title">Titre de la todo</label>
       <input type="text" name="title" v-model="title" />
 
-      <label for="content">Contenu de la todo</label>
+      <label for="description">Contenu de la todo</label>
       <textarea
-        name="content"
+        name="description"
         id=""
         cols="30"
         rows="10"
-        v-model="content"
+        v-model="description"
       ></textarea>
 
       <button type="submit">Enregistrer</button>
@@ -20,30 +20,51 @@
 
 <script setup>
 import { ref } from "vue";
+import { useMutation, useQuery } from "@vue/apollo-composable";
+import gql from "graphql-tag";
+
+const TODOS_QUERY = gql`
+  query getAllTodos {
+    todosList {
+      id
+      title
+      description
+    }
+  }
+`;
+
+const { result } = useQuery(TODOS_QUERY);
 
 const title = ref("");
-const content = ref("");
+const description = ref("");
 
-// Post request with fetch
-// TODO : Field should not not be empty
-// const handleSubmit = () => {
-
-//     const requestOptions = {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//             title: title.value,
-//             content: content.value
-//             })
-//       };
-
-//       fetch("http://localhost:8000/api/todos/", requestOptions)
-//         .then(response => response.json())
-
-//         title.value = "",
-//         content.value= ""
-
-// }
+const { mutate: todoCreate } = useMutation(
+  gql`
+    mutation todoCreate($title: String!, $description: String!) {
+      todoCreate(input: { title: $title, description: $description }) {
+        todo {
+          id
+          title
+          description
+        }
+      }
+    }
+  `,
+  () => ({
+    variables: {
+      title: title.value,
+      description: description.value,
+    },
+    update: (cache, { data: { todoCreate } }) => {
+      let data = cache.readQuery({ query: TODOS_QUERY });
+      data = {
+        ...data,
+        todosList: [...data.todosList, todoCreate],
+      };
+      cache.writeQuery({ query: TODOS_QUERY, data });
+    },
+  })
+);
 </script>
 
 <style scoped>
